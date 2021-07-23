@@ -1,0 +1,8 @@
+{
+  "code-runner.executorMapByFileExtension": {
+    ".html": "make server"
+  },
+  "code-runner.executorMap": {
+    "go": "make server"
+  }
+}

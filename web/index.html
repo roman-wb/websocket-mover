@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"
+      rel="stylesheet"
+    />
+    <script src="//cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js"></script>
+    <script src="//code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <title>Hello, world!</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        user-select: none;
+      }
+      .box {
+        background: red;
+        color: white;
+        font-weight: bold;
+        width: 100px;
+        height: 100px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        border: 10px solid red;
+        box-sizing: border-box;
+      }
+      .box div {
+        text-align: center;
+        user-select: none;
+      }
+      .unselectable {
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box unselectable">Locked</div>
+
+    <script>
+      let box;
+
+      let localState = {
+        isMoving: false,
+        startX: 0,
+        startY: 0,
+        prevX: 0,
+        prevY: 0,
+      };
+
+      let remoteState = {
+        id: 0,
+        ownerId: 0,
+        x: 0,
+        y: 0,
+        isOwner: function () {
+          return this.id == this.ownerId;
+        },
+        isReady: function () {
+          return (
+            this.ownerId == undefined ||
+            this.ownerId == null ||
+            this.ownerId == 0
+          );
+        },
+        update: function (data) {
+          if (typeof data["id"] == "string") remoteState.id = data["id"];
+          remoteState.ownerId = data["ownerId"];
+          let x = parseInt(data["x"], 10);
+          if (!isNaN(x)) remoteState.x = x;
+          let y = parseInt(data["y"], 10);
+          if (!isNaN(y)) remoteState.y = y;
+        },
+      };
+    </script>
+
+    <script>
+      toastr.options = {
+        closeButton: true,
+        debug: false,
+        newestOnTop: false,
+        progressBar: false,
+        positionClass: "toast-top-right",
+        preventDuplicates: true,
+        onclick: null,
+        showDuration: "300",
+        hideDuration: "1000",
+        timeOut: "2000",
+        extendedTimeOut: "1000",
+        showEasing: "swing",
+        hideEasing: "linear",
+        showMethod: "fadeIn",
+        hideMethod: "fadeOut",
+      };
+
+      $(document).ready(function () {
+        box = $(".box");
+
+        $(box).mousedown(function (e) {
+          console.log("mousedown");
+
+          if (remoteState.isReady()) {
+            localState = { isMoving: true, startX: e.pageX, startY: e.pageY };
+            socket.send(JSON.stringify({ type: "tryLock" }));
+          } else {
+            toastr["warning"]("Failure lock");
+          }
+        });
+
+        $(document).mousemove(function (e) {
+          if (localState.isMoving) {
+            move(e);
+          }
+        });
+
+        $(document).mouseup(function (e) {
+          localState.isMoving = false;
+
+          if (remoteState.isOwner()) {
+            remoteState.ownerId = 0;
+            remoteState.x = localState.prevX;
+            remoteState.y = localState.prevY;
+
+            updateUI();
+
+            socket.send(JSON.stringify({ type: "tryUnlock" }));
+          }
+        });
+      });
+
+      function move(e) {
+        if (!remoteState.isOwner()) {
+          return;
+        }
+
+        let diffX = e.pageX - localState.startX;
+        let diffY = e.pageY - localState.startY;
+        if (diffX == 0 && diffY == 0) {
+          return;
+        }
+
+        let x = remoteState.x + diffX;
+        let y = remoteState.y + diffY;
+
+        if (x + $(box).outerWidth() > $(document).width()) {
+          x = $(document).width() - $(box).outerWidth();
+        } else if (x < 0) {
+          x = 0;
+        }
+
+        if (y + $(box).outerWidth() > $(document).height()) {
+          y = $(document).height() - $(box).outerWidth();
+        } else if (y < 0) {
+          y = 0;
+        }
+
+        if (localState.prevX == x && localState.prevY == y) {
+          return;
+        }
+
+        localState.prevX = x;
+        localState.prevY = y;
+        updateUI(x, y);
+
+        if (socket.readyState == WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: "tryMove", x: x, y: y }));
+        }
+      }
+
+      function updateUI(x, y) {
+        let value = "Locked";
+        let color = "red";
+        if (remoteState.isReady()) {
+          value = "Ready";
+          color = "green";
+        } else if (remoteState.isOwner()) {
+          value = "Moving";
+          color = "blue";
+        }
+
+        $(box).html(value);
+        $(box).css({
+          display: "flex",
+          background: color,
+          borderColor: color,
+          top: y == undefined ? remoteState.y : y,
+          left: x == undefined ? remoteState.x : x,
+        });
+      }
+    </script>
+
+    <script>
+      var socket;
+      var timeoutReconnect;
+
+      if (window.location.protocol == "https:") {
+        wsConnect("wss://" + window.location.host + "/ws");
+      } else {
+        wsConnect("ws://" + window.location.host + "/ws");
+      }
+
+      function wsConnect(url) {
+        socket = new WebSocket(url);
+
+        socket.onopen = function (e) {
+          console.log("[open]");
+
+          toastr["success"]("Connected");
+          timeoutReconnect = 1000;
+        };
+
+        socket.onmessage = function (event) {
+          console.log("[message]", event.data);
+
+          let data = JSON.parse(event.data);
+
+          switch (data["type"]) {
+            case "state": {
+              remoteState.update(data);
+              if (!localState.isMoving && remoteState.isOwner()) {
+                remoteState.ownerId = "";
+                socket.send(JSON.stringify({ type: "tryUnlock" }));
+              }
+              updateUI();
+              break;
+            }
+            case "notify": {
+              toastr["info"](data["notify"]);
+              break;
+            }
+          }
+        };
+
+        socket.onclose = function (event) {
+          console.log(`[close] code=${event.code} reason=${event.reason}`);
+          toastr["warning"]("Disconnected, try reconnect...");
+          setTimeout(function () {
+            wsConnect(url);
+          }, timeoutReconnect);
+          timeoutReconnect *= 2;
+        };
+      }
+    </script>
+  </body>
+</html>

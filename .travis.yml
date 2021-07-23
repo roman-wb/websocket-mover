@@ -1,0 +1,11 @@
+language: go
+
+services:
+  - docker
+
+go:
+  - 1.16
+
+script:
+  - make lint
+  - make docker-build
