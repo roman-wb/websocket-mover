@@ -41,8 +41,6 @@ Note: Require installed ngrok https://ngrok.com
 make ngrok
 ```
 
-## Demo
-
 ## Inspired
 
 https://github.com/gorilla/websocket/tree/master/examples/chat
