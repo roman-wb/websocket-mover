@@ -1,4 +1,4 @@
-.PHONY: server lint
+.PHONY: server ngrok lint build docker-build docker-run
 
 server:
 	go run main.go

@@ -13,7 +13,7 @@ Demo https://websocket-mover-js6or.ondigitalocean.app/
 
 <img width="1581" alt="demo" src="https://user-images.githubusercontent.com/8343350/126767561-6a164a51-d40f-43a4-bf83-1ceea280c71b.png">
 
-## Feature
+## Features
 
 - Move DOM object (Box) between browsers
 - Exclusive lock for move
@@ -33,15 +33,20 @@ Demo https://websocket-mover-js6or.ondigitalocean.app/
 make server
 ```
 
+### Docker
+
+```bash
+make docker-build
+make docker-run
+```
+
 ### Mapping to the internet with ngrok
 
-Note: Require installed ngrok https://ngrok.com
+Note: Require installed [ngrok](https://ngrok.com)
 
 ```bash
 make ngrok
 ```
-
-## Demo
 
 ## Inspired
 
