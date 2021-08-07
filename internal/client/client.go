@@ -47,7 +47,7 @@ func NewClient(logger Logger, broker Broker, conn *websocket.Conn) *Client {
 		broker:   broker,
 		conn:     conn,
 		id:       uuid.New().String(),
-		outbound: make(chan []byte),
+		outbound: make(chan []byte, 100),
 	}
 }
 

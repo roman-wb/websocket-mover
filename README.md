@@ -9,7 +9,7 @@
 
 # Move DOM object (Box) between browsers
 
-Demo http://ec2-34-253-163-178.eu-west-1.compute.amazonaws.com/
+Demo https://websocket-mover-js6or.ondigitalocean.app/
 
 <img width="1581" alt="demo" src="https://user-images.githubusercontent.com/8343350/126767561-6a164a51-d40f-43a4-bf83-1ceea280c71b.png">
 
